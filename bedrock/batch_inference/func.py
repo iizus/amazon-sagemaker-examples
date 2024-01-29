@@ -1,20 +1,12 @@
-import base64
-import io
 import json
 import logging
-import boto3
-from PIL import Image
-from botocore.exceptions import ClientError
-
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-class ImageError(Exception):
-    "Custom exception for errors returned by Titan Image Generator G1"
-    def __init__(self, message):
-        self.message = message
 
+import boto3
+import base64
 
 def generate_image(model_id, body):
     """
@@ -54,11 +46,22 @@ def generate_image(model_id, body):
     return image_bytes
 
 
-def main():
-    """
-    Entrypoint for Titan Image Generator G1 example.
-    """
+from PIL import Image
+import io
 
+def display_image(image_bytes):
+    image = Image.open(io.BytesIO(image_bytes))
+    image.show()
+
+
+class ImageError(Exception):
+    "Custom exception for errors returned by Titan Image Generator G1"
+    def __init__(self, message):
+        self.message = message
+
+from botocore.exceptions import ClientError
+
+def inference(prompt:str):
     logging.basicConfig(
         level = logging.INFO,
         format = "%(levelname)s: %(message)s"
@@ -86,9 +89,7 @@ def main():
             model_id = model_id,
             body = body
         )
-        image = Image.open(io.BytesIO(image_bytes))
-        image.show()
-
+        display_image(image_bytes)        
     except ClientError as err:
         message = err.response["Error"]["Message"]
         logger.error("A client error occurred: %s", message)
@@ -99,7 +100,3 @@ def main():
 
     else:
         print(f"Finished generating image with Titan Image Generator G1 model {model_id}.")
-
-
-if __name__ == "__main__":
-    main()
