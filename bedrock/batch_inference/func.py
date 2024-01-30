@@ -61,13 +61,14 @@ class ImageError(Exception):
 
 from botocore.exceptions import ClientError
 
-def inference(prompt:str):
+def inference(
+    model_id:str="amazon.titan-image-generator-v1",
+    prompt:str="A dog running at a park."
+) -> None:
     logging.basicConfig(
         level = logging.INFO,
         format = "%(levelname)s: %(message)s"
     )
-
-    model_id = 'amazon.titan-image-generator-v1'
 
     body = json.dumps({
         "taskType": "TEXT_IMAGE",
