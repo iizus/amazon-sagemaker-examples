@@ -60,54 +60,50 @@
 import boto3, utils
 
 class Bucket:
-    def __init__(name:str) -> Bucket:
+    def __init__(self, name:str):
         __s3 = boto3.resource('s3')
-        self.bucket = __s3.Bucket(name=key)
+        self.bucket = __s3.Bucket(name=name)
 
-    def Object(key:str) -> Object:
+    def Object(self, key:str):
         return self.bucket.Object(key=key)
 
 
-
-class Bedrock:
-    def __init__(region:str="us-east-1") -> Bedrock:
-        self.bedrock:boto3.client = boto3.client(
+class Batch:
+    def __init__(
+        self,
+        model_id:str,
+        number_of_images:int,
+        inputs:dict,
+        region:str = "us-east-1",
+    ):
+        self.__bedrock = boto3.client(
             service_name = "bedrock",
             region_name = region
         )
-
-class Batch:
-    def __init__(
-        bedrock:Bedrock,
-        model_id:str,
-        number_of_images:int,
-        inputs:dict
-    ) -> Batch:
-        self.__bedrock:Bedrock = bedrock
         self.model_id:str = model_id
         self.number_of_images:int = number_of_images
-        self.__config = utils.load_config()
+        self.__config = utils.load_config(file_name="config.yaml")
         self.__upload(inputs)
         __response:dict = self.__create_job()
         self.arn = __response.get("jobArn")
         self.id = self.arn.split("/")[-1].strip()
 
 
-    def __upload(inputs) -> (str, str):
+    def __upload(self, inputs):
         __bucket_name = self.__config.get("bucket_name")
         __bucket = Bucket(name=__bucket_name)
 
         __condition:str = f"{self.model_id}/{self.number_of_images}"
         self.name:str = f"{__condition}/{utils.get_formatted_time()}".replace("/", "-")
 
-        self.output_dir = f"s3://{__bucket_name}/Bedrock/Batch-Inference/{__condition}/"
-        self.input_key = f"{self.output_dir}/input.jsonl"
+        self.output_dir:str = f"s3://{__bucket_name}/Bedrock/Batch-Inference/{__condition}/"
+        self.input_key:str = f"{self.output_dir}/input.jsonl"
 
         __input = __bucket.Object(key=self.input_key)
         __input.put(Body=inputs)
 
 
-    def __create_job() -> dict:
+    def __create_job(self) -> dict:
         __place_of_input = ({
             "s3InputDataConfig": {
                 "s3Uri": self.input_key
@@ -128,5 +124,5 @@ class Batch:
         return __response
 
 
-    def get_status():
+    def get_status(self):
         self.info:dict = self.__bedrock.get_model_invocation_job(jobIdentifier=self.arn)
