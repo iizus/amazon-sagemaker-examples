@@ -84,7 +84,7 @@ class Batch:
         __response:dict = self.__create(
             job_name = f"{__condition}/{utils.get_formatted_time()}".replace("/", "-")
         )
-        pprint(__response)
+        # pprint(__response)
         self.arn = __response.get("jobArn")
         self.id = self.arn.split("/")[-1].strip()
 
