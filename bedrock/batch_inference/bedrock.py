@@ -53,11 +53,8 @@
 # wait_until_complete(job_arn)
 
 
-
-
-
-
 import boto3, utils
+from pprint import pprint
 
 class Bucket:
     def __init__(self, name:str):
@@ -83,27 +80,30 @@ class Batch:
         self.model_id:str = model_id
         self.number_of_images:int = number_of_images
         self.__config = utils.load_config(file_name="config.yaml")
-        self.__upload(inputs)
-        __response:dict = self.__create_job()
+        __condition:str = self.__upload(inputs)
+        __response:dict = self.__create(
+            job_name = f"{__condition}/{utils.get_formatted_time()}".replace("/", "-")
+        )
+        pprint(__response)
         self.arn = __response.get("jobArn")
         self.id = self.arn.split("/")[-1].strip()
 
 
-    def __upload(self, inputs):
+    def __upload(self, inputs) -> str:
         __bucket_name = self.__config.get("bucket_name")
         __bucket = Bucket(name=__bucket_name)
 
         __condition:str = f"{self.model_id}/{self.number_of_images}"
-        self.name:str = f"{__condition}/{utils.get_formatted_time()}".replace("/", "-")
-
         self.output_dir:str = f"s3://{__bucket_name}/Bedrock/Batch-Inference/{__condition}/"
-        self.input_key:str = f"{self.output_dir}/input.jsonl"
+        self.input_key:str = f"{self.output_dir}input.jsonl"
 
         __input = __bucket.Object(key=self.input_key)
         __input.put(Body=inputs)
 
+        return __condition
 
-    def __create_job(self) -> dict:
+
+    def __create(self, job_name:str) -> dict:
         __place_of_input = ({
             "s3InputDataConfig": {
                 "s3Uri": self.input_key
@@ -117,12 +117,22 @@ class Batch:
         __response:dict = self.__bedrock.create_model_invocation_job(
             roleArn = self.__config.get("role"),
             modelId = self.model_id,
-            jobName = self.name,
+            jobName = job_name,
             inputDataConfig = __place_of_input,
             outputDataConfig = __place_of_output
         )
         return __response
 
 
-    def get_status(self):
-        self.info:dict = self.__bedrock.get_model_invocation_job(jobIdentifier=self.arn)
+    def get_status(self) -> dict:
+        __job_info:dict = self.__bedrock.get_model_invocation_job(jobIdentifier=self.arn)
+        
+        self.name:str = __job_info.get("jobName")
+        self.status:str = __job_info.get("status")
+        self.message:str = __job_info.get("message")
+        self.submit_time:datetime = __job_info.get("submitTime")
+        self.last_modified_time:datetime = __job_info.get("lastModifiedTime")
+        
+        self.progress_time:delta = self.last_modified_time - self.submit_time
+
+        return __job_info
