@@ -53,7 +53,7 @@
 # wait_until_complete(job_arn)
 
 
-import boto3, utils
+import json, boto3, utils
 from pprint import pprint
 
 class Bucket:
@@ -69,8 +69,10 @@ class Batch:
     def __init__(
         self,
         model_id:str,
-        number_of_images:int,
-        inputs:dict,
+        prompts:tuple,
+        functions,
+        # number_of_images:int,
+        # inputs:dict,
         region:str = "us-east-1",
     ):
         self.__bedrock = boto3.client(
@@ -78,8 +80,11 @@ class Batch:
             region_name = region
         )
         self.model_id:str = model_id
-        self.number_of_images:int = number_of_images
+        # self.number_of_images:int = number_of_images
         self.__config = utils.load_config(file_name="config.yaml")
+
+        inputs:str = self.__create_input_of(prompts=prompts, functions=functions)
+        pprint(inputs)
         __condition:str = self.__upload(inputs)
         __response:dict = self.__create(
             job_name = f"{__condition}/{utils.get_formatted_time()}".replace("/", "-")
@@ -90,11 +95,30 @@ class Batch:
         pprint(self.get_status())
 
 
-    def __upload(self, inputs) -> str:
+    def __create_input_of(self, prompts:tuple, functions) -> str:
+        make_body_by = functions.get(self.model_id)
+        jsonl = str()
+        for record_id, prompt in enumerate(prompts):
+            body:dict = make_body_by(prompt)
+            record:dict = self.__make_record_by(record_id, body)
+            jsonl = jsonl + record + "\n"
+        else:
+            return jsonl
+
+
+    def __make_record_by(self, record_id:int, body:dict) -> dict:
+        record:dict = {
+            "recordId": str(record_id).zfill(12),
+            "modelInput": body
+        }
+        return json.dumps(record)
+
+
+    def __upload(self, inputs:str) -> str:
         __bucket_name = self.__config.get("bucket_name")
         __bucket = Bucket(name=__bucket_name)
 
-        __condition:str = f"{self.model_id}/{self.number_of_images}"
+        __condition:str = f"{self.model_id}/{len(inputs)}"
         self.output_dir:str = f"s3://{__bucket_name}/Bedrock/Batch-Inference/{__condition}/"
         self.input_key:str = f"{self.output_dir}input.jsonl"
 
