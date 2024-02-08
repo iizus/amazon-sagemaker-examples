@@ -15,9 +15,19 @@ def load_config(file_name:str="config.yaml") -> dict:
         return safe_load(config_file)
 
 
+
+def wait_until_complete(get_status, initial_status:str):
+    print(get_status())
+    status, time_delta = __wait(get_status=get_status, monitored_status=initial_status)
+    print(f" | {time_delta} sec")
+    status, time_delta = __wait(get_status=get_status, monitored_status=status)
+    print(status)
+    print(f" | {time_delta} sec")
+    print(status)
+
 from time import perf_counter, sleep
 
-def wait(get_status, monitored_status:str):
+def __wait(get_status, monitored_status:str):
     status:str = monitored_status
 
     started_time = perf_counter()
