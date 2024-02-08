@@ -1,56 +1,4 @@
-# from time import perf_counter, sleep
-# from boto3 import client
-# bedrock = client(service_name="bedrock", region_name=region)
 
-
-# def get_job_status_of(job_arn:str) -> str:
-#     job:dict = bedrock.get_model_invocation_job(jobIdentifier=job_arn)
-#     job_status:str = job.get("status")
-#     sleep(1)
-#     return job_status
-
-
-# def wait(job_arn:str, monitored_status:str) -> str:
-#     job_status:str = monitored_status
-#     print(job_status)
-
-#     started_time = perf_counter()
-#     while job_status == monitored_status:
-#         job_status:str = get_job_status_of(job_arn)
-#     ended_time = perf_counter()
-
-#     time_delta = round(ended_time - started_time)
-#     print(f" | {time_delta} sec")
-#     return job_status
-
-
-# def wait_until_complete(job_arn:str):
-#     print("----- Job status -----")
-#     job_status:str = wait(job_arn=job_arn, monitored_status="Submitted")
-#     job_status:str = wait(job_arn=job_arn, monitored_status=job_status)
-#     print(job_status)
-
-#     error_message:str = bedrock.get_model_invocation_job(jobIdentifier=job_arn).get("message")
-#     print(error_message)
-#     ! aws s3 cp $output_dir$job_id/manifest.json.out -
-
-
-
-# response = bedrock.create_model_invocation_job(
-#     roleArn = role,
-#     modelId = model_id,
-#     jobName = job_name,
-#     inputDataConfig = inputDataConfig,
-#     outputDataConfig = outputDataConfig
-# )
-# from pprint import pprint
-# # pprint(response, width=30, compact=False)
-
-# job_arn = response.get("jobArn")
-# job_id = job_arn.split("/")[-1].strip()
-# print(job_id)
-
-# wait_until_complete(job_arn)
 
 
 import json, boto3, utils
@@ -149,15 +97,20 @@ class Batch:
         return response
 
 
-    def get_status(self) -> dict:
-        __job_info:dict = self.__bedrock.get_model_invocation_job(jobIdentifier=self.arn)
+    def get_status(self) -> str:
+        job_info:dict = self.get_job_info()
+        return job_info.get("status")
+
+
+    def get_job_info(self) -> dict:
+        job_info:dict = self.__bedrock.get_model_invocation_job(jobIdentifier=self.arn)
         
-        self.name:str = __job_info.get("jobName")
-        self.status:str = __job_info.get("status")
-        self.error:str = __job_info.get("message")
-        self.submit_time:datetime = __job_info.get("submitTime")
-        self.last_modified_time:datetime = __job_info.get("lastModifiedTime")
+        self.name:str = job_info.get("jobName")
+        self.status:str = job_info.get("status")
+        self.error:str = job_info.get("message")
+        self.submit_time:datetime = job_info.get("submitTime")
+        self.last_modified_time:datetime = job_info.get("lastModifiedTime")
         
         self.progress_time:delta = self.last_modified_time - self.submit_time
 
-        return __job_info
+        return job_info
