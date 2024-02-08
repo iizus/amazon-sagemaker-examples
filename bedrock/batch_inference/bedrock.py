@@ -129,7 +129,7 @@ class Batch:
         
         self.name:str = __job_info.get("jobName")
         self.status:str = __job_info.get("status")
-        self.message:str = __job_info.get("message")
+        self.error:str = __job_info.get("message")
         self.submit_time:datetime = __job_info.get("submitTime")
         self.last_modified_time:datetime = __job_info.get("lastModifiedTime")
         
