@@ -87,6 +87,7 @@ class Batch:
         # pprint(__response)
         self.arn = __response.get("jobArn")
         self.id = self.arn.split("/")[-1].strip()
+        pprint(self.get_status())
 
 
     def __upload(self, inputs) -> str:
