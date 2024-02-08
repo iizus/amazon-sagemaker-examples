@@ -17,7 +17,7 @@ def load_config(file_name:str="config.yaml") -> dict:
 
 from time import perf_counter, sleep
 
-def wait(get_status, monitored_status:str) -> (str, datetime.timedelta):
+def wait(get_status, monitored_status:str):
     status:str = monitored_status
 
     started_time = perf_counter()

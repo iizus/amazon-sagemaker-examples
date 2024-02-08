@@ -68,11 +68,14 @@ class Batch:
 
     def __upload(self, inputs:str) -> dict:
         self.__condition:str = f"{self.model_id}/{inputs.count('recordId')}"
-        self.output_dir:str = f"s3://{self.__bucket_name}/Bedrock/Batch-Inference/{self.__condition}/"
-        self.input_key:str = f"{self.output_dir}input.jsonl"
-
-        input_oblect = self.bucket.Object(key=self.input_key)
+        output_dir:str = f"Bedrock/Batch-Inference/{self.__condition}"
+        input_key:str = f"{output_dir}/input.jsonl"
+        input_oblect = self.bucket.Object(key=input_key)
         response:dict = input_oblect.put(Body=inputs)
+
+        self.output_dir:str = f"s3://{self.__bucket_name}/{output_dir}/"
+        self.input_key:str = f"{self.output_dir}input.jsonl"
+        
         return response
 
 
