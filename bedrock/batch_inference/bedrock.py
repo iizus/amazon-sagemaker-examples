@@ -1,13 +1,22 @@
-import json, boto3, utils
+import json, boto3, utils, s3
 from pprint import pprint
 
-class Bucket:
-    def __init__(self, name:str):
-        __s3 = boto3.resource('s3')
-        self.bucket = __s3.Bucket(name=name)
 
-    def Object(self, key:str):
-        return self.bucket.Object(key=key)
+class Bedrock:
+    def __init__(self, region:str="us-east-1"):
+        self.client = boto3.client(
+            service_name = "bedrock",
+            region_name = region
+        )
+
+    def list_batch_jobs(status:str=None, max_results:int=100, sort:str="Descending") -> dict:
+        return self.client.list_model_invocation_jobs(
+            maxResults = max_results,
+            statusEquals = status,
+            sortOrder = sort
+        )
+
+
 
 
 def create_input_of(prompts:tuple, make_body_by) -> str:
@@ -28,18 +37,13 @@ def __make_record_by(record_id:int, body:dict) -> dict:
     return json.dumps(record)
 
 
-class Bedrock:
-    def __init__(self):
-        pass
-
-
 class Batch:
     def __init__(
         self,
         model_id:str,
         prompts:tuple,
         functions,
-        region:str = "us-east-1",
+        bedrock,
     ):
         self.model_id:str = model_id
 
@@ -47,21 +51,19 @@ class Batch:
             prompts = prompts,
             make_body_by = functions.get(model_id)
         )
-        self.__bedrock = boto3.client(
-            service_name = "bedrock",
-            region_name = region
-        )
+        self.__bedrock = bedrock
         config:dict = utils.load_config(file_name="config.yaml")
         
         self.__bucket_name=config.get("bucket_name")
-        self.bucket = Bucket(name=self.__bucket_name)
+        self.bucket = s3.Bucket(name=self.__bucket_name)
         response:dict = self.__upload(inputs)
 
         response:dict = self.__create(role=config.get("role"))
 
         self.arn = response.get("jobArn")
         self.id = self.arn.split("/")[-1].strip()
-        
+        self.get_job_info()
+
 
     def __upload(self, inputs:str) -> dict:
         self.__condition:str = f"{self.model_id}/{inputs.count('recordId')}"
