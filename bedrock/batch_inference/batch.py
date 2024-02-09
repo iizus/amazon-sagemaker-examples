@@ -58,25 +58,29 @@ class Batch:
 
 
     def __create_by(self, input_key:str, output_dir:str) -> dict:
-        place_of_input = ({
-            "s3InputDataConfig": {
-                "s3Uri": input_key
-            }
-        })
-        place_of_output = ({
-            "s3OutputDataConfig": {
-                "s3Uri": output_dir
-            }
-        })
-        response:dict = self.__bedrock.create_model_invocation_job(
-            roleArn = self.__config.get("role"),
-            modelId = self.model_id,
-            jobName = f"{self.__condition}/{utils.get_formatted_time()}".replace('/', '-').replace(':', '-'),
-            inputDataConfig = place_of_input,
-            outputDataConfig = place_of_output
+        return self.__bedrock.create_job(
+            model_id = self.model_id,
+            job_name = self.__condition,
+            input_key = input_key,
+            output_dir = output_dir,
         )
-        return response
-
+        # place_of_input = ({
+        #     "s3InputDataConfig": {
+        #         "s3Uri": input_key
+        #     }
+        # })
+        # place_of_output = ({
+        #     "s3OutputDataConfig": {
+        #         "s3Uri": output_dir
+        #     }
+        # })
+        # return self.__bedrock.create_model_invocation_job(
+        #     roleArn = self.__config.get("role"),
+        #     modelId = self.model_id,
+        #     jobName = f"{self.__condition}/{utils.get_formatted_time()}".replace('/', '-').replace(':', '-'),
+        #     inputDataConfig = place_of_input,
+        #     outputDataConfig = place_of_output
+        # )
 
     def get_status(self) -> str:
         job_info:dict = self.get_job_info()
@@ -84,7 +88,7 @@ class Batch:
 
 
     def get_job_info(self) -> dict:
-        job_info:dict = self.__bedrock.get_model_invocation_job(jobIdentifier=self.arn)
+        job_info:dict = self.__bedrock.get_job_info(job_arn=self.arn)
         
         self.name:str = job_info.get("jobName")
         self.status:str = job_info.get("status")
@@ -97,14 +101,16 @@ class Batch:
         return job_info
 
 
+    def stop(self) -> dict:
+        return self.__bedrock.stop_job(job_arn=self.arn)
+
+
     def wait(self):
         print(f"ID: {self.id}")
         print(f"Name: {self.name}")
-
         utils.wait_until_complete(
             get_status = self.get_status,
             stopped_status = ('Completed', 'Failed', 'Stopped'),
         )
-
         print(f"Error: {self.error}")
         print(f"Total time: {self.progress_time}")
