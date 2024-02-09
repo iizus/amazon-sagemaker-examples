@@ -31,9 +31,9 @@ class Batch:
             prompts = prompts,
             make_body_by = self.__make_body_by,
         )
-        self.__bucket_name = self.__config.get("bucket_name")
-        self.bucket = s3.Bucket(name=self.__bucket_name)
-        return self.__upload(inputs)
+        bucket_name:str = self.__config.get('bucket_name')
+        self.bucket = s3.Bucket(name=bucket_name)
+        return self.__upload(inputs, bucket_name)
 
 
     def create_job(self, input_key:str, output_dir:str) -> dict:
@@ -44,14 +44,14 @@ class Batch:
         return response
 
 
-    def __upload(self, inputs:str) -> (str, str):
+    def __upload(self, inputs:str, bucket_name:str) -> (str, str):
         self.__condition:str = f"{self.model_id}/{inputs.count('recordId')}"
         _output_dir:str = f"Bedrock/Batch-Inference/{self.__condition}"
         _input_key:str = f"{_output_dir}/input.jsonl"
         input_oblect = self.bucket.Object(key=_input_key)
         response:dict = input_oblect.put(Body=inputs)
 
-        output_dir:str = f"s3://{self.__bucket_name}/{_output_dir}/"
+        output_dir:str = f"s3://{bucket_name}/{_output_dir}/"
         input_key:str = f"{output_dir}input.jsonl"
         
         return input_key, output_dir
@@ -95,3 +95,16 @@ class Batch:
         self.progress_time:delta = self.last_modified_time - self.submit_time
 
         return job_info
+
+
+    def wait(self):
+        print(f"ID: {self.id}")
+        print(f"Name: {self.name}")
+
+        utils.wait_until_complete(
+            get_status = self.get_status,
+            stopped_status = ('Completed', 'Failed', 'Stopped'),
+        )
+
+        print(f"Error: {self.error}")
+        print(f"Total time: {self.progress_time}")
