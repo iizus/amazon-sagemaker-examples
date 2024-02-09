@@ -16,14 +16,14 @@ def load_config(file_name:str="config.yaml") -> dict:
 
 
 
-def wait_until_complete(get_status, initial_status:str):
-    print(get_status())
-    status, time_delta = __wait(get_status=get_status, monitored_status=initial_status)
-    print(f" | {time_delta} sec")
+def wait_until_complete(get_status, stopped_status:tuple):
+    status:str = get_status()
     print(status)
-    status, time_delta = __wait(get_status=get_status, monitored_status=status)
-    print(f" | {time_delta} sec")
-    print(status)
+    while status not in stopped_status:
+        status, time_delta = __wait(get_status=get_status, monitored_status=status)
+        print(f" | {time_delta} sec")
+        print(status)
+
 
 from time import perf_counter, sleep
 
