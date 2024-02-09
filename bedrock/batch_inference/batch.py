@@ -29,7 +29,7 @@ class Batch:
     def create_inputs_by(self, prompts:tuple) -> (str, str):
         inputs:str = create_input_of(
             prompts = prompts,
-            make_body_by = self.__make_body_by
+            make_body_by = self.__make_body_by,
         )
         self.__bucket_name = self.__config.get("bucket_name")
         self.bucket = s3.Bucket(name=self.__bucket_name)
