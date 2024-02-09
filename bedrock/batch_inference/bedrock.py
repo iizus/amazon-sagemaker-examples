@@ -1,4 +1,4 @@
-import json, boto3, utils, s3
+import json, boto3, utils, s3, pandas
 from pprint import pprint
 
 
@@ -9,12 +9,17 @@ class Bedrock:
             region_name = region
         )
 
-    def list_batch_jobs(status:str=None, max_results:int=100, sort:str="Descending") -> dict:
-        return self.client.list_model_invocation_jobs(
-            maxResults = max_results,
-            statusEquals = status,
+    def get_number_of_jobs(self) -> pandas.DataFrame:
+        jobs:list = self.list_batch_jobs()
+        return pandas.DataFrame(jobs)
+
+    def list_batch_jobs(self, sort:str="Descending") -> list:
+        jobs:list = self.client.list_model_invocation_jobs(
+            # maxResults = max_results,
+            # statusEquals = status,
             sortOrder = sort
-        )
+        ).get("invocationJobSummaries")
+        return jobs
 
 
 

@@ -1,7 +1,7 @@
 from boto3 import resource
 
 class Bucket:
-    def __init__(self, name:str) -> Bucket:
+    def __init__(self, name:str) -> None:
         s3 = resource('s3')
         self.bucket:s3.Bucket = s3.Bucket(name=name)
 
