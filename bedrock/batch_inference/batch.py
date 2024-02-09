@@ -19,11 +19,15 @@ def __make_record_by(record_id:int, body:dict) -> dict:
 
 
 class Batch:
+    jsonl_file_name:str = 'input.jsonl'
+    config:dict = utils.load_config(file_name='config.yaml')
+    bucket_name:str = config.get('bucket_name')
+    bucket = s3.Bucket(name=bucket_name)
+
     def __init__(self, model_id:str, functions, bedrock):
         self.model_id:str = model_id
         self.__make_body_by = functions.get(model_id)
         self.__bedrock = bedrock
-        self.__config:dict = utils.load_config(file_name="config.yaml")
 
 
     def create_inputs_by(self, prompts:tuple) -> (str, str):
@@ -31,56 +35,34 @@ class Batch:
             prompts = prompts,
             make_body_by = self.__make_body_by,
         )
-        bucket_name:str = self.__config.get('bucket_name')
-        self.bucket = s3.Bucket(name=bucket_name)
-        return self.__upload(inputs, bucket_name)
+        return self.__upload(inputs)
 
 
-    def create_job(self, input_key:str, output_dir:str) -> dict:
-        response:dict = self.__create_by(input_key, output_dir)
+    def create_job(self, condition:str, output_dir:str) -> dict:
+        response:dict = self.__create_by(condition, output_dir)
         self.arn = response.get("jobArn")
         self.id = self.arn.split("/")[-1].strip()
         self.get_job_info()
         return response
 
 
-    def __upload(self, inputs:str, bucket_name:str) -> (str, str):
-        self.__condition:str = f"{self.model_id}/{inputs.count('recordId')}"
-        _output_dir:str = f"Bedrock/Batch-Inference/{self.__condition}"
-        _input_key:str = f"{_output_dir}/input.jsonl"
-        input_oblect = self.bucket.Object(key=_input_key)
-        response:dict = input_oblect.put(Body=inputs)
-
-        output_dir:str = f"s3://{bucket_name}/{_output_dir}/"
-        input_key:str = f"{output_dir}input.jsonl"
-        
-        return input_key, output_dir
+    def __upload(self, inputs:str) -> (str, str):
+        condition:str = f"{self.model_id}/{inputs.count('recordId')}"
+        output_dir:str = f"Bedrock/Batch-Inference/{condition}"
+        input_key:str = f"{_output_dir}/{jsonl_file_name}"
+        input_object = bucket.Object(key=_input_key)
+        response:dict = input_object.put(Body=inputs)
+        return condition, output_dir
 
 
-    def __create_by(self, input_key:str, output_dir:str) -> dict:
+    def __create_by(self, condition:str, output_dir:str) -> dict:
+        _output_dir:str = f"s3://{bucket_name}/{output_dir}/"
         return self.__bedrock.create_job(
             model_id = self.model_id,
-            job_name = self.__condition,
-            input_key = input_key,
+            job_name = condition,
+            input_key = f"{_output_dir}{jsonl_file_name}",
             output_dir = output_dir,
         )
-        # place_of_input = ({
-        #     "s3InputDataConfig": {
-        #         "s3Uri": input_key
-        #     }
-        # })
-        # place_of_output = ({
-        #     "s3OutputDataConfig": {
-        #         "s3Uri": output_dir
-        #     }
-        # })
-        # return self.__bedrock.create_model_invocation_job(
-        #     roleArn = self.__config.get("role"),
-        #     modelId = self.model_id,
-        #     jobName = f"{self.__condition}/{utils.get_formatted_time()}".replace('/', '-').replace(':', '-'),
-        #     inputDataConfig = place_of_input,
-        #     outputDataConfig = place_of_output
-        # )
 
     def get_status(self) -> str:
         job_info:dict = self.get_job_info()
