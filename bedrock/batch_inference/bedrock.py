@@ -6,9 +6,9 @@ class Bedrock:
     config:dict = utils.load_config(file_name='config.yaml')
     role:str = config.get('role')
 
-    def __init__(self, region:str="us-east-1"):
+    def __init__(self, region:str='us-east-1'):
         self.client = boto3.client(
-            service_name = "bedrock",
+            service_name = 'bedrock',
             region_name = region,
         )
 
@@ -19,18 +19,18 @@ class Bedrock:
             accept = Bedrock.content_type,
             contentType = Bedrock.content_type,
         )
-        return json.loads(response.get("body").read())
+        return json.loads(response.get('body').read())
 
     def group_jobs_by_status(self) -> pandas.DataFrame:
-        grouped_by_status:pandas.DataFrame = self.get_dataframe_of_jobs().groupby("status").size()
+        grouped_by_status:pandas.DataFrame = self.get_dataframe_of_jobs().groupby('status').size()
         print(f"Number of all jobs: {grouped_by_status.sum()}")
         return grouped_by_status
 
     def get_dataframe_of_jobs(self, max_results:int=1000) -> pandas.DataFrame:
         jobs:list = self.list_batch_jobs(max_results=max_results)
-        return pandas.DataFrame(jobs).set_index("jobArn")
+        return pandas.DataFrame(jobs).set_index('jobArn')
 
-    def list_batch_jobs(self, max_results:int=1000, sort_order:str="Descending") -> list:
+    def list_batch_jobs(self, max_results:int=1000, sort_order:str='Descending') -> list:
         jobs:list = self.client.list_model_invocation_jobs(
             maxResults = max_results,
             # statusEquals = status,
@@ -40,18 +40,18 @@ class Bedrock:
             # sortBy = sort_by,
             sortOrder = sort_order,
             # nextToken = next_token,
-        ).get("invocationJobSummaries")
+        ).get('invocationJobSummaries')
         return jobs
 
     def create_job(self, model_id:str, job_name:str, input_key:str, output_dir:str) -> dict:
         place_of_input:tuple = ({
-            "s3InputDataConfig": {
-                "s3Uri": input_key
+            's3InputDataConfig': {
+                's3Uri': input_key
             }
         })
         place_of_output:tuple = ({
-            "s3OutputDataConfig": {
-                "s3Uri": output_dir
+            's3OutputDataConfig': {
+                's3Uri': output_dir
             }
         })
         return self.client.create_model_invocation_job(
