@@ -1,19 +1,30 @@
-import boto3, pandas, utils
+import json, boto3, pandas, utils
 
 
 class Bedrock:
+    content_type = 'application/json'
+    config:dict = utils.load_config(file_name='config.yaml')
+    role:str = config.get('role')
+
     def __init__(self, region:str="us-east-1"):
         self.client = boto3.client(
             service_name = "bedrock",
-            region_name = region
+            region_name = region,
         )
-        config:dict = utils.load_config(file_name='config.yaml')
-        self.__role:str = config.get('role')
+
+    def invoke_model(self, model_id:str, body:dict) -> json:
+        response:dict = self.client.invoke_model(
+            body = body,
+            modelId = model_id,
+            accept = Bedrock.content_type,
+            contentType = Bedrock.content_type,
+        )
+        return json.loads(response.get("body").read())
 
     def group_jobs_by_status(self) -> pandas.DataFrame:
-        jobs:pandas.DataFrame = self.get_dataframe_of_jobs()
-        print(jobs.sum(axis='status'))
-        return jobs.groupby("status").size()
+        grouped_by_status:pandas.DataFrame = self.get_dataframe_of_jobs().groupby("status").size()
+        print(f"Number of all jobs: {grouped_by_status.sum()}")
+        return grouped_by_status
 
     def get_dataframe_of_jobs(self, max_results:int=1000) -> pandas.DataFrame:
         jobs:list = self.list_batch_jobs(max_results=max_results)
@@ -44,7 +55,7 @@ class Bedrock:
             }
         })
         return self.client.create_model_invocation_job(
-            roleArn = self.__role,
+            roleArn = Bedrock.role,
             modelId = model_id,
             jobName = f"{job_name}-{utils.get_formatted_time()}".replace('/', '-').replace(':', '-'),
             inputDataConfig = place_of_input,
