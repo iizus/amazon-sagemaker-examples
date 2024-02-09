@@ -30,19 +30,20 @@ class Batch:
 
     def __upload(self, inputs:str) -> (str, str):
         job_name:str = f"{self.model_id}/{inputs.count('recordId')}"
-        output_dir:str = f"Bedrock/Batch-Inference/{job_name}"
-        input_key:str = f"{_output_dir}/{jsonl_file_name}"
-        input_object = bucket.Object(key=_input_key)
+        output_dir:str = f"Bedrock/Batch-Inference/{job_name}/"
+        input_key:str = f"{output_dir}{Batch.jsonl_file_name}"
+        input_object = Batch.bucket.Object(key=input_key)
         response:dict = input_object.put(Body=inputs)
         return job_name, output_dir
 
 
     def __create(self, job_name:str, output_dir:str) -> dict:
+        _output_dir:str = f"s3://{Batch.bucket_name}/{output_dir}"
         return self.__bedrock.create_job(
             model_id = self.model_id,
             job_name = job_name,
-            input_key = f"s3://{bucket_name}/{output_dir}/{jsonl_file_name}",
-            output_dir = output_dir,
+            input_key = f"{_output_dir}{Batch.jsonl_file_name}",
+            output_dir = _output_dir,
         )
 
 
