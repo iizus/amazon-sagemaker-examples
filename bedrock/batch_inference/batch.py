@@ -1,22 +1,4 @@
-import json, utils, s3
-
-def create_input_of(prompts:tuple, make_body_by) -> str:
-    jsonl = str()
-    for record_id, prompt in enumerate(prompts):
-        body:dict = make_body_by(prompt)
-        record:dict = __make_record_by(record_id, body)
-        jsonl = jsonl + record + "\n"
-    else:
-        return jsonl
-
-
-def __make_record_by(record_id:int, body:dict) -> dict:
-    record:dict = {
-        "recordId": str(record_id).zfill(12),
-        "modelInput": body
-    }
-    return json.dumps(record)
-
+import utils, s3, batch_utils
 
 class Batch:
     jsonl_file_name:str = 'input.jsonl'
@@ -31,7 +13,7 @@ class Batch:
 
 
     def create_inputs_by(self, prompts:tuple) -> (str, str):
-        inputs:str = create_input_of(
+        inputs:str = batch_utils.create_input_of(
             prompts = prompts,
             make_body_by = self.__make_body_by,
         )
@@ -63,6 +45,7 @@ class Batch:
             input_key = f"{_output_dir}{jsonl_file_name}",
             output_dir = output_dir,
         )
+
 
     def get_status(self) -> str:
         job_info:dict = self.get_job_info()
