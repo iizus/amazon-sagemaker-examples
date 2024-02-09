@@ -73,9 +73,11 @@ class Batch:
     def wait(self):
         print(f"ID: {self.id}")
         print(f"Name: {self.name}")
+        print()
         utils.wait_until_complete(
             get_status = self.get_status,
             stopped_status = ('Completed', 'Failed', 'Stopped'),
         )
+        print()
         print(f"Error: {self.error}")
         print(f"Total time: {self.progress_time}")

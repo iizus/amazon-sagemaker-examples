@@ -11,7 +11,9 @@ class Bedrock:
         self.__role:str = config.get('role')
 
     def group_jobs_by_status(self) -> pandas.DataFrame:
-        return self.get_dataframe_of_jobs().groupby("status").size()
+        jobs:pandas.DataFrame = self.get_dataframe_of_jobs()
+        print(jobs.sum(axis='status'))
+        return jobs.groupby("status").size()
 
     def get_dataframe_of_jobs(self, max_results:int=1000) -> pandas.DataFrame:
         jobs:list = self.list_batch_jobs(max_results=max_results)
