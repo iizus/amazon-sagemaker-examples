@@ -71,7 +71,7 @@ class Batch:
         response:dict = self.__bedrock.create_model_invocation_job(
             roleArn = self.__config.get("role"),
             modelId = self.model_id,
-            jobName = f"{self.__condition}/{utils.get_formatted_time()}".replace("/", "-"),
+            jobName = f"{self.__condition}/{utils.get_formatted_time()}".replace('/', '-').replace(':', '-'),
             inputDataConfig = place_of_input,
             outputDataConfig = place_of_output
         )
