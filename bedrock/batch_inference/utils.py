@@ -20,8 +20,8 @@ def wait_until_complete(get_status, initial_status:str):
     print(get_status())
     status, time_delta = __wait(get_status=get_status, monitored_status=initial_status)
     print(f" | {time_delta} sec")
-    status, time_delta = __wait(get_status=get_status, monitored_status=status)
     print(status)
+    status, time_delta = __wait(get_status=get_status, monitored_status=status)
     print(f" | {time_delta} sec")
     print(status)
 

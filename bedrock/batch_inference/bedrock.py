@@ -1,6 +1,3 @@
-
-
-
 import json, boto3, utils
 from pprint import pprint
 
@@ -31,6 +28,10 @@ def __make_record_by(record_id:int, body:dict) -> dict:
     return json.dumps(record)
 
 
+class Bedrock:
+    def __init__(self):
+        pass
+
 
 class Batch:
     def __init__(
@@ -46,8 +47,6 @@ class Batch:
             prompts = prompts,
             make_body_by = functions.get(model_id)
         )
-        # pprint(inputs)
-
         self.__bedrock = boto3.client(
             service_name = "bedrock",
             region_name = region
@@ -62,8 +61,6 @@ class Batch:
 
         self.arn = response.get("jobArn")
         self.id = self.arn.split("/")[-1].strip()
-
-        # pprint(self.get_status())
         
 
     def __upload(self, inputs:str) -> dict:
