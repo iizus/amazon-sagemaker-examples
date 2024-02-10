@@ -7,14 +7,18 @@ class Bedrock:
     role:str = config.get('role')
 
     def __init__(self, region:str='us-east-1'):
-        self.client = boto3.client(
+        self.client:boto3.client = boto3.client(
             service_name = 'bedrock',
             region_name = region,
         )
+        self.runtime:boto3.client = boto3.client(
+            service_name = 'bedrock-runtime',
+            region_name = region,
+        )
 
-    def invoke_model(self, model_id:str, body:dict) -> json:
-        response:dict = self.client.invoke_model(
-            body = body,
+    def invoke(self, model_id:str, body:dict) -> json:
+        response:dict = self.runtime.invoke_model(
+            body = json.dumps(body),
             modelId = model_id,
             accept = Bedrock.content_type,
             contentType = Bedrock.content_type,
